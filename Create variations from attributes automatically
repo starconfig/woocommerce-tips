@@ -1,0 +1,37 @@
+//Create variations from attributes automatically, you need to save products or edit products 
+
+function myplugin_create_variations($product_id) {
+    wc_maybe_define_constant('WC_MAX_LINKED_VARIATIONS', 50);
+    wc_set_time_limit(0);
+
+    if ( ! $product_id ) {
+        wp_die('No product ID provided');
+    }
+
+    $product = wc_get_product($product_id);
+
+    // Check if the product exists and is a variable product
+    if ( ! $product || ! $product->is_type('variable') ) {
+        error_log("Product with ID $product_id either does not exist or is not a variable product.");
+        return;
+    }
+
+    $data_store = $product->get_data_store();
+
+    if ( ! is_callable(array($data_store, 'create_all_product_variations')) ) {
+        wp_die('Data store does not support creating all product variations.');
+    }
+
+    echo esc_html($data_store->create_all_product_variations($product, WC_MAX_LINKED_VARIATIONS));
+    $data_store->sort_all_product_variations($product->get_id());
+}
+
+add_action('save_post_product', 'call_myplugin_create_variations', 10, 3);
+
+function call_myplugin_create_variations($post_ID, $post, $update) {
+    if ($post->post_type != 'product') {
+        return;
+    }
+
+    myplugin_create_variations($post_ID);
+}
