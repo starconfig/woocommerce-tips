@@ -1,0 +1,37 @@
+function resave_products_in_batches() {
+    $args = array(
+        'post_type'      => 'product',
+        'posts_per_page' => 50, // Process 50 products per batch
+        'post_status'    => 'publish',
+        'paged'          => 1,  // Start with the first page
+    );
+
+    do {
+        $products = get_posts($args);
+
+        if (empty($products)) {
+            break; // Exit if no more products are found
+        }
+
+        foreach ($products as $product) {
+            // This will trigger the save_post hook
+            wp_update_post(array('ID' => $product->ID));
+        }
+
+        $args['paged']++; // Increment the page number for the next batch
+
+        // Optional: sleep for a few seconds to reduce server load
+        sleep(3);
+
+    } while (count($products) > 0);
+}
+
+// Optionally, you can hook this function to an action or run it directly.
+// resave_products_in_batches();
+add_action('admin_init', function() {
+    if (isset($_GET['resave_products']) && $_GET['resave_products'] == 'true') {
+        resave_products_in_batches();
+    }
+});
+
+// You can then trigger the function by visiting: yoursite.com/wp-admin/?resave_products=true
